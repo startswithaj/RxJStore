@@ -1,4 +1,4 @@
-![Lines](httphttps://img.shields.io/badge/Coverage-82.93%25-yellow.svg "Make me better!") ![BuildStatus](https://img.shields.io/badge/Build-Passing-brightgreen.svg "Building Status")
+![Lines](https://img.shields.io/badge/Coverage-84.07%25-yellow.svg "Make me better!") ![BuildStatus](https://img.shields.io/badge/Build-Passing-brightgreen.svg "Building Status")
 
 
 # RxJStore
