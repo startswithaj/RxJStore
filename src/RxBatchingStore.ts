@@ -21,8 +21,8 @@ interface IBatchEvent<TResponse, TRequest> {
 }
 
 export type RxBatchFetchingFunction<TResponse, TRequest, Extra = void> = (
-  req: Array<IRequestWithExtra<TRequest, Extra>>,
-) => Observable<Array<IRxBatchSingleResponse<TResponse, TRequest>>>;
+  req: IRequestWithExtra<TRequest, Extra>[],
+) => Observable<IRxBatchSingleResponse<TResponse, TRequest>[]>;
 
 // Some of the code in this file is borrowed from the user Marc https://stackoverflow.com/a/57401289
 export class RxBatchingStore<TResponse, TRequest, Extra = void, TError = string> extends RxStore<
@@ -78,7 +78,7 @@ export class RxBatchingStore<TResponse, TRequest, Extra = void, TError = string>
     );
   }
 
-  private fetchBatch(reqs: Array<IRequestWithExtra<TRequest, Extra>>): IBatchEvent<TResponse, TRequest> {
+  private fetchBatch(reqs: IRequestWithExtra<TRequest, Extra>[]): IBatchEvent<TResponse, TRequest> {
     const uniqRequests = uniqBy(reqs, (req) => nodeObjectSorter(req.request));
     const responsesOb = this.batchFetchingFunction(uniqRequests).pipe(
       map((results) => keyBy(results, (result) => nodeObjectSorter(result.request))),

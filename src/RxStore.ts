@@ -48,7 +48,7 @@ export type TFetcherWithAnExtra<T, Params, Extra> = (
 export type TFetcher<T, Params> = (params: Params) => Observable<T>;
 export type TParamHasher<Params> = (params: Params) => string;
 
-export abstract class RxStore<T, Params, Extra = void, TError = Error> {
+export class RxStore<T, Params, Extra = void, TError = Error> {
   protected store: IRxStoreMap<T, Params, TError> = {};
 
   constructor(

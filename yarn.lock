@@ -468,10 +468,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@olavoparno/jest-badges-readme@git@github.com:cbuv/jest-badges-readme.git":
-  version "1.3.6"
-  resolved "https://registry.yarnpkg.com/@olavoparno/jest-badges-readme/-/jest-badges-readme-1.3.6.tgz#af39b8da376038366cb5647d6247daeefdb830fd"
-  integrity sha512-u8PH5SxU2D8xlOfEB8S5rELX7xpmkXlA5LcTpovU9zQDtaZ+ADAdeuTAFiZw06Mr0KRzXtt61a9GPNN1cmy0Ng==
+"@olavoparno/jest-badges-readme@^1.4.1":
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/@olavoparno/jest-badges-readme/-/jest-badges-readme-1.5.1.tgz#0ea187a1557ae597c55072716638c3d1dfba710b"
+  integrity sha512-7srGdj+rECGrWD5kfmS5suIUi+Ruh5X5zPdI1NWa39bKiq/0TNYG7yoWKty/IMk7WxI+G+tluhhmvgAR831eZQ==
 
 "@sinonjs/commons@^1.7.0":
   version "1.8.1"

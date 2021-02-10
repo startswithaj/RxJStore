@@ -27,6 +27,111 @@ If you have a new project that uses RxJs and could use nice clean access to:
 
 ## How
 
+### RxStore
+
+```ts
+import { Observable } from "rxjs";
+import { map } from "rxjs/operators";
+import { RxStore, storeFilterOutLoading, storeMapToError, storeMapToLoading, storeMapToValue  } from "RxStore";
+
+
+interface Product {
+  productId: string
+  // ...otherProps
+}
+
+function getProduct(productId: string): Observable<Product> {
+  console.log('> Calling product endpoint: ', productId)
+  return this.httpClient.get(`https://example.com/products`, { params: {productId} });
+}
+
+// In component 1
+const productStore = new RxStore(getProduct, (err) => err);
+
+const product1Store = productStore.getStore('product1');
+
+const $loading = product1Store.pipe(storeMapToLoading); // emits true then false
+const $value = product1Store.pipe(storeMapToValue); // emits undefined and then the product (once it loads)
+const $valueOnly = product1Store.pipe(storeFilterOutLoading, storeMapToValue); // only emits the product (once it loads)
+const $error = product1Store.pipe(storeMapToError); // emits Error if there is an error
+
+$value.subscribe()
+// '> Calling products endpoint: product1' - doesn't fetch until there is a subscriber
+
+// In some other component or some other part of the application
+const product1StoreY = productStore.getStore('product1').subscribe();
+// No network call `product1` is cached`
+
+// In some other component
+const product1StoreZ = productStore.getStore('prodict1', {force: true}).subscribe();
+// '> Calling products endpoint: product1'
+// product is re-fetched, all subscribers of store1 and store2 are updated with re-fetched product as well
+
+```
+### RxBatchingStore
+```ts
+import { Observable } from "rxjs";
+import { map } from "rxjs/operators";
+import { RxBatchFetchingFunction, RxBatchingStore } from "./RxBatchingStore";
+
+type ProductId = string;
+
+function getProducts(productIds: string[]): Observable<Product[]> {
+  console.log('> Calling products endpoint', productIds)
+  return this.httpClient.get(`https://example.com/products`, { params: {productIds} });
+}
+
+// RxBatchingFetcher is a function that takes an array of requests and produces an array of responses.
+const fetcher: RxBatchFetchingFunction<Product, ProductId> = (requests: { request: ProductId }[]) => {
+  const productIds = requests.map(r => r.request);
+  const $products = getProducts(productIds);
+  return $products.pipe(map(products => {
+    return products.map(product => {
+      // We return an array of request:response pairs
+      // This allows the store to notify the respective subscriber
+      return {request: product.productId, response: product}
+    })
+  }))
+}
+
+
+const productsBatchingStore = new RxBatchingStore(fetcher, err => err)
+
+const products1Store = productsBatchingStore.getStore('product1').subscribe();
+const products2Store = productsBatchingStore.getStore('product2').subscribe();
+const products3Store = productsBatchingStore.getStore('product3').subscribe();
+// '> Calling products endpoint: product1, product2, product3' - one network call
+
+productsBatchingStore.expireAll()
+// '> Calling products endpoint: product1, product2, product3' - one network call
+
+productsBatchingStore.expireWhere(productId => productId === 'product1')
+// '> Calling products endpoint: product1' = products1Store is notified with new value
+
+```
+
+## IOC
+
+RxStore is compatible with most IOC/DI frameworks. Simply create stores by extending the RxStore class and mark those classes as @Injectable(). The fetcher and error handler are passes to the super constructor.
+
+```ts
+
+type ProductId = string;
+type ErrorType = string;
+
+@Injectable()
+class ProductStore2 extends RxStore<Product[], ProductId, void, ErrorType> {
+  constructor(productService: ProductService, errorLogger: ErrorLoggingService) { // ProductService is @Injectable
+    super(productId => productService.getProduct(productId), err => {
+      errorLogger.error(err)
+      return err.message;
+    })
+  }
+}
+
+```
+
+
 ## Operators
 
 In the spirit of RxJS, RxJStore comes with several useful operators that help with interacting with the store.
