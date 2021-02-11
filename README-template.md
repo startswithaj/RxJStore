@@ -5,6 +5,11 @@
 
 A lightweight tool for caching, batching and interface unification in the spirit of RxJS.
 
+```
+npm install rxjstore
+
+```
+
 ## What does it do?
 
 RxJStore exists as a wrapper for RxJS that allows you to cache network or computationally expensive operations quickly and easily while exposing a common interface that allows the consumer access to `loading`, `value` and `error` states in a consistent way. It also has the capacity to introduce seamless batching - allowing multiple components/consumers to request the same or disparate items - the requests are de-duplicated, batched, calculated/fetched and the underlying subscribers are notified of the results for their respective requests.
