@@ -27,6 +27,21 @@ If you have a new project that uses RxJs and could use nice clean access to:
 
 ## How
 
+All stores always return `{ loading: boolean, value: T | undefined, error: undefined | TError = Error }`. They never throw. Inner properties of the store can be mapped to directly using the util operators provided.
+
+You create a store by providing a `fetcher` function. This function is called when the value for the given parameter does not exist in the store or a re-fetch is forced.
+
+The fetcher must only take one parameter of any type eg.
+`(req: string) => Observable<Response>` || `(req: { param1: string, param2: number}) => Observable<Response>`. The fetcher must return an observable. The store infers the 1st parameters type and types the getStore function.
+
+The fetcher will usually be a function that takes the request parameter and makes a http call, db call, or connects to a stream. It can simply be a function that does heavy computation that needs to be cached and shared as a stream.
+
+You also provide an `errorParser` function that we be called with any runtime error that is thrown from the fetcher. What this function returns will be the value of `error` in { loading, value, error}. eg `(err) => err.message` || `(err) => err.code + ':' + err.message` || `(err) => err` (i.e a passthrough).
+
+RxStore takes 2 other optional parameters. `deleteFromCacheTimeMS` - if this value is not set, data in the store is never removed. If this value is set the data in the store will be removed `deleteFromCacheTimeMS` once the last subscriber to that value unsubscribes. If there is a new subscriber in the meantime, this will be reset.
+
+`paramHasher` - Because values in the store are stored against the parameter that is used to request the value, for complex parameter types we need to be able to hash the parameter. This is done automatically by the store for most complex types using `node-object-hash` but in some cases you may want to provide you own hashing function I.E you may not want all parts of a complex parameter object used in the signature/hash. in this case you can override it. In 99% of cases supply changing this default behaviour is not necessary. A `paramHasher` is a function that takes the request param and returns a string eg `(req: { param1: string, param2: number}) => JSON.Stringify(req)`.
+
 ### RxStore
 
 ```ts
@@ -37,17 +52,22 @@ import { RxStore, storeFilterOutLoading, storeMapToError, storeMapToLoading, sto
 
 interface Product {
   productId: string
-  // ...otherProps
+  imageUrl: string
+  // ...etc
 }
 
 function getProduct(productId: string): Observable<Product> {
   console.log('> Calling product endpoint: ', productId)
-  return this.httpClient.get(`https://example.com/products`, { params: {productId} });
+  return httpClient.get(`https://example.com/product`, { params: {productId} });
 }
 
-// In component 1
-const productStore = new RxStore(getProduct, (err) => err);
+const fetcher = getProduct
+const errParser = (err: Error) => err.message
 
+// Singleton
+const productStore = new RxStore(fetcher, errParser);
+
+// In component 1
 const product1Store = productStore.getStore('product1');
 
 const $loading = product1Store.pipe(storeMapToLoading); // emits true then false
@@ -69,6 +89,7 @@ const product1StoreZ = productStore.getStore('prodict1', {force: true}).subscrib
 
 ```
 ### RxBatchingStore
+
 ```ts
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
@@ -78,7 +99,7 @@ type ProductId = string;
 
 function getProducts(productIds: string[]): Observable<Product[]> {
   console.log('> Calling products endpoint', productIds)
-  return this.httpClient.get(`https://example.com/products`, { params: {productIds} });
+  return httpClient.get(`https://example.com/products`, { params: {productIds} });
 }
 
 // RxBatchingFetcher is a function that takes an array of requests and produces an array of responses.
@@ -97,22 +118,28 @@ const fetcher: RxBatchFetchingFunction<Product, ProductId> = (requests: { reques
 
 const productsBatchingStore = new RxBatchingStore(fetcher, err => err)
 
-const products1Store = productsBatchingStore.getStore('product1').subscribe();
-const products2Store = productsBatchingStore.getStore('product2').subscribe();
-const products3Store = productsBatchingStore.getStore('product3').subscribe();
+const products1StoreSub = productsBatchingStore.getStore('product1').subscribe();
+const products2StoreSub = productsBatchingStore.getStore('product2').subscribe();
+const products3StoreSub = productsBatchingStore.getStore('product3').subscribe();
 // '> Calling products endpoint: product1, product2, product3' - one network call
 
-productsBatchingStore.expireAll()
+productsBatchingStore.expireAll() // Forces refetch of all actively subscribed store values
 // '> Calling products endpoint: product1, product2, product3' - one network call
+
+products2StoreSub.unsubscribe()
+
+productsBatchingStore.expireAll() // Forces refetch of all actively subscribed store values
+// '> Calling products endpoint: product1, product3' - one network call
+
 
 productsBatchingStore.expireWhere(productId => productId === 'product1')
 // '> Calling products endpoint: product1' = products1Store is notified with new value
 
 ```
 
-## IOC
+## IOC/DI
 
-RxStore is compatible with most IOC/DI frameworks. Simply create stores by extending the RxStore class and mark those classes as @Injectable(). The fetcher and error handler are passes to the super constructor.
+RxStore is compatible with most IOC/DI frameworks. Simply create stores by extending the RxStore class and mark those classes as @Injectable(). In this case the fetcher and error handler are passed to the super constructor.
 
 ```ts
 
@@ -120,8 +147,8 @@ type ProductId = string;
 type ErrorType = string;
 
 @Injectable()
-class ProductStore2 extends RxStore<Product[], ProductId, void, ErrorType> {
-  constructor(productService: ProductService, errorLogger: ErrorLoggingService) { // ProductService is @Injectable
+class ProductStore extends RxStore<Product[], ProductId, void, ErrorType> {
+  constructor(productService: ProductService, errorLogger: ErrorLoggingService) {
     super(productId => productService.getProduct(productId), err => {
       errorLogger.error(err)
       return err.message;
@@ -136,7 +163,8 @@ class ProductStore2 extends RxStore<Product[], ProductId, void, ErrorType> {
 
 In the spirit of RxJS, RxJStore comes with several useful operators that help with interacting with the store.
 
-```
+```ts
+// Only receive value
 export const storeFilterOutLoading = <T extends IHasLoading>(source: Observable<T>) =>
   source.pipe(filter(store => !store.loading));
 
@@ -165,10 +193,10 @@ RxJStore will operate as expected passing through new values as their emitted by
 
 ## Custom Base Store
 
-You may want to standardise the store for your use case. For instance you may want standardise the parsing of errors across a set of your stores so that the consumer is always dealing with a `string` or you may want to expect a consistent `extra` parameter in your fetchers. For instance in the application that inspired this tool there was a http interceptor that would intercept all network requests and show a global loader. To be able to transition away from this - an extra parameter was added to all the requests to inform the interceptor which type of loader to show (or not) and allow an iterative approach to transitioning away from the global loader to more localised/lower level loading state management.
+You may want to standardise the store for your use case. For instance you may want standardise the parsing of errors across a set of your stores so that the consumer is always dealing with a `string` or you may want to expect a consistent `extra` parameter in your fetchers (eg. for triggering global loading animations).
+In the application that inspired this tool there was a http interceptor that would intercept all network requests and show a global loader. To be able to transition away from this - an extra parameter was added to all the requests to inform the interceptor which type of loader to show (or not) and allow an iterative approach to transitioning away from the global loader to more localised/lower level loading state management.
 
-```
-
+```ts
 
 // Special error object parser
 import { ErrorParser } from '../util/error-parser';

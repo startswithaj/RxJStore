@@ -200,7 +200,6 @@ export class RxStore<T, Params, Extra = void, TError = Error> {
         };
       }),
       // This stops new subscribers re-triggering the whole stream and provides late subscribers the last value
-      // tslint:disable-next-line
       shareReplay(1)
     );
 
