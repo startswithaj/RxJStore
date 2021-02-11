@@ -36,15 +36,26 @@ All stores always return `{ loading: boolean, value: T | undefined, error: undef
 You create a store by providing a `fetcher` function. This function is called when the value for the given parameter does not exist in the store or a re-fetch is forced.
 
 The fetcher must only take one parameter of any type eg.
-`(req: string) => Observable<Response>` || `(req: { param1: string, param2: number}) => Observable<Response>`. The fetcher must return an observable. The store infers the 1st parameters type and types the getStore function.
+
+```ts
+(req: string) => Observable<Response>
+(req: { colour: string, size: number}) => Observable<Response>
+```
+
+The fetcher must return an observable. The store infers the 1st parameters type and types it's members according to the fetcher.
 
 The fetcher will usually be a function that takes the request parameter and makes a http call, db call, or connects to a stream. It can simply be a function that does heavy computation that needs to be cached and shared as a stream.
 
-You also provide an `errorParser` function that we be called with any runtime error that is thrown from the fetcher. What this function returns will be the value of `error` in { loading, value, error}. eg `(err) => err.message` || `(err) => err.code + ':' + err.message` || `(err) => err` (i.e a passthrough).
+You also provide an `errorParser` function that we be called with any runtime error that is thrown from the fetcher. What this function returns will be the value of `error` in `{ loading, value, error}`. eg.
+```ts
+(err) => err.message
+(err) => err.code + ':' + err.message
+(err) => err // (i.e a passthrough).
+```
 
-RxStore takes 2 other optional parameters. `deleteFromCacheTimeMS` - if this value is not set, data in the store is never removed. If this value is set the data in the store will be removed `deleteFromCacheTimeMS` once the last subscriber to that value unsubscribes. If there is a new subscriber in the meantime, this will be reset.
+RxStore takes 2 other optional parameters. `deleteFromCacheTimeMS` - if this value is not set, data in the store is never removed. If this value is set the data in the store will be removed `deleteFromCacheTimeMS` after the last subscriber to that value unsubscribes. If there is a new subscriber in the intervening time, this will be reset.
 
-`paramHasher` - Because values in the store are stored against the parameter that is used to request the value, for complex parameter types we need to be able to hash the parameter. This is done automatically by the store for most complex types using `node-object-hash` but in some cases you may want to provide you own hashing function I.E you may not want all parts of a complex parameter object used in the signature/hash. in this case you can override it. In 99% of cases supply changing this default behaviour is not necessary. A `paramHasher` is a function that takes the request param and returns a string eg `(req: { param1: string, param2: number}) => JSON.Stringify(req)`.
+`paramHasher` - Because values in the store are stored against the parameter that is used to request the value, for complex parameter types we need to be able to hash the parameter. This is done automatically by the store for most complex types using `node-object-hash` but in some cases you may want to provide you own hashing function I.E you may not want all parts of a complex parameter object used in the signature/hash. in this case you can override it. In 99.9% of cases changing this default behaviour is not necessary. A `paramHasher` is a function that takes the request param and returns a string eg `(req: { param1: string, param2: number}) => JSON.Stringify(req)`.
 
 ### RxStore
 
@@ -87,7 +98,7 @@ const product1StoreY = productStore.getStore('product1').subscribe();
 // No network call `product1` is cached`
 
 // In some other component
-const product1StoreZ = productStore.getStore('prodict1', {force: true}).subscribe();
+const product1StoreZ = productStore.getStore('product1', {force: true}).subscribe();
 // '> Calling products endpoint: product1'
 // product is re-fetched, all subscribers of store1 and store2 are updated with re-fetched product as well
 
