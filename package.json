@@ -1,6 +1,6 @@
 {
   "name": "rxjstore",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A lightweight tool for caching, batching and interface unification in the spirit of RxJS.",
   "main": "dist/index.js",
   "repository": {
@@ -14,7 +14,7 @@
     "batching",
     "reactive",
     "observables"
-],
+  ],
   "author": "Jake Mc <jake.mc@icloud.com>",
   "license": "MIT",
   "scripts": {
