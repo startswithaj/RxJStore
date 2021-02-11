@@ -7,7 +7,6 @@ A lightweight tool for caching, batching and interface unification in the spirit
 
 ```
 npm install rxjstore
-
 ```
 
 ## What does it do?
