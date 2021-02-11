@@ -1,4 +1,4 @@
-![Lines](https://img.shields.io/badge/Coverage-84.07%25-yellow.svg "Make me better!") ![BuildStatus](https://img.shields.io/badge/Build-Passing-brightgreen.svg "Building Status")
+![Lines](https://img.shields.io/badge/Coverage-98.23%25-brightgreen.svg "Make me better!") ![BuildStatus](https://img.shields.io/badge/Build-Passing-brightgreen.svg "Building Status")
 
 
 # RxJStore
@@ -134,6 +134,25 @@ productsBatchingStore.expireAll() // Forces refetch of all actively subscribed s
 
 productsBatchingStore.expireWhere(productId => productId === 'product1')
 // '> Calling products endpoint: product1' = products1Store is notified with new value
+
+```
+
+### getStores
+
+All stores (batching and normal) have a helper method that allows the user to fetch multiple values from the store at once.
+`getStores(params[])`. This returns `{ value: [], loading: boolean, error: [] }`. The loading state will remain true until all the values have been fetched, though updates are emitted as the values come in.
+
+```ts
+
+const productsToFetch = ['product1', 'product2', 'product3'];
+const productsStore = productStore.getStores(productsToFetch);
+
+productsStore.subscribe(store => {
+  console.log('log:', store):
+  // log: { loading: true, value: [], error: [] }
+  // log: { loading: false, value: [{product1}, {product2}, {product}], error: [] }
+})
+
 
 ```
 

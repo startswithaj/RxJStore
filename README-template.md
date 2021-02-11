@@ -137,6 +137,25 @@ productsBatchingStore.expireWhere(productId => productId === 'product1')
 
 ```
 
+### getStores
+
+All stores (batching and normal) have a helper method that allows the user to fetch multiple values from the store at once.
+`getStores(params[])`. This returns `{ value: [], loading: boolean, error: [] }`. The loading state will remain true until all the values have been fetched, though updates are emitted as the values come in.
+
+```ts
+
+const productsToFetch = ['product1', 'product2', 'product3'];
+const productsStore = productStore.getStores(productsToFetch);
+
+productsStore.subscribe(store => {
+  console.log('log:', store):
+  // log: { loading: true, value: [], error: [] }
+  // log: { loading: false, value: [{product1}, {product2}, {product}], error: [] }
+})
+
+
+```
+
 ## IOC/DI
 
 RxStore is compatible with most IOC/DI frameworks. Simply create stores by extending the RxStore class and mark those classes as @Injectable(). In this case the fetcher and error handler are passed to the super constructor.

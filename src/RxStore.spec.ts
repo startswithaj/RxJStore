@@ -25,11 +25,12 @@ describe("RxStore", () => {
   let rxStore: TestStore;
   let mockFetcher: TFetcher<ITestObj, string>;
 
+  beforeEach(() => {
+    mockFetcher = jasmine.createSpy().and.returnValue(toDelayedOb(TEST_RESULT));
+    rxStore = new TestStore(mockFetcher);
+  });
+
   describe("getStore", () => {
-    beforeEach(() => {
-      mockFetcher = jasmine.createSpy().and.returnValue(toDelayedOb(TEST_RESULT));
-      rxStore = new TestStore(mockFetcher);
-    });
 
     it("returns observable", () => {
       expect(rxStore.getStore(TEST_PARAM)).toEqual(jasmine.any(Observable));
@@ -151,4 +152,37 @@ describe("RxStore", () => {
       expect(Object.keys(rxStore.accessStore()).length).toEqual(1);
     });
   });
+
+  describe('getStores',  () => {
+    it('should combine the results of both requests', async () => {
+      const expectedValues = [
+        { loading: true, value: [], error: [] },
+        { loading: false, value: [TEST_RESULT, TEST_RESULT], error: [] },
+      ];
+      const emittedValues = await rxStore.getStores([TEST_PARAM, "TEST_PARAM_2"])
+        .pipe(take(2), toArray()).toPromise();
+
+      expect(emittedValues).toEqual(expectedValues);
+    });
+  });
+
+  describe("expireAll", () => {
+    it("refetches all live subscriptions", () => {
+      rxStore.getStore(TEST_PARAM).subscribe();
+      rxStore.expireAll();
+
+      expect(mockFetcher).toHaveBeenCalledTimes(2);
+    })
+  })
+
+  describe("expireAll", () => {
+    it("re-fetches expired requests with live subscriptions", () => {
+      rxStore.getStore(TEST_PARAM).subscribe();
+      rxStore.getStore("TEST_PARAM_2").subscribe();
+      expect(mockFetcher).toHaveBeenCalledTimes(2);
+      rxStore.expireWhere(x => x === "TEST_PARAM_2");
+      expect(mockFetcher).toHaveBeenCalledTimes(3);
+    })
+  })
+
 });
