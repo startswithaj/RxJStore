@@ -217,7 +217,7 @@ export class CustomBaseStore<T, Params> extends RxStore<T, Params, CustomLoaders
     super(
       fetcher,
       err => ErrorParser.getErrMsg(err),
-      60 * 5 // 5 minute expiry
+      1000 * 60 * 5 // 5 minute expiry
     );
   }
 
