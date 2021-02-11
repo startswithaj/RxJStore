@@ -1,6 +1,6 @@
 {
   "name": "rxjstore",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lightweight tool for caching, batching and interface unification in the spirit of RxJS.",
   "main": "dist/index.js",
   "repository": "git@github.com:startswithaj/RxJStore.git",
